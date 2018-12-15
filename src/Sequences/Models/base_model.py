@@ -14,7 +14,7 @@ from abc import abstractmethod, ABC
 
 
 class BaseModel(ABC):
-    def __init__(self, sess: tf.InteractiveSession, graph: tf.Graph,
+    def __init__(self, sess: tf.Session, graph: tf.Graph,
                  debug: bool, model_name: str, learning_rate=0.01):
         self.sess = sess
         self.graph = graph

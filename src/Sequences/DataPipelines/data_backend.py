@@ -8,8 +8,6 @@ Notes:
     
 """
 
-import numpy as np
-
 
 class Pipeline(object):
     def __init__(self, src: dict):
@@ -38,8 +36,8 @@ class Pipeline(object):
 
 
 if __name__ == '__main__':
-    from DataPipelines.common_backends import np_backend
-    from DataPipelines.common_preprocessors import log_normalizations
+    from Sequences.DataPipelines.common_backends import np_backend
+    from Sequences.DataPipelines.common_preprocessors import log_normalizations
 
     pipeline_config = {
         'backend': 'Folder',
