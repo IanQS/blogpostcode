@@ -31,6 +31,5 @@ if __name__ == '__main__':
     debug = True
     model = SimpleRNN(sess, graph, debug)
 
-    for el in dataset.provide():
 
 
