@@ -1,7 +1,7 @@
 .idea
 *.npy
 *.data
-processed_data/
+src/Tf_Exploration/exploration/processed_data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
