@@ -32,9 +32,11 @@ def _int64_feature(value):
 
 class FeatureProto(object):
     from collections import namedtuple
-    
+    import numpy as np
+
     proto = namedtuple('prototype', ['name', 'dtype', 'shape'])
-    
+
+    # Reading the data
     features = [
         proto(name='Elevation', dtype=tf.float32, shape=1),
         proto(name='Aspect', dtype=tf.float32, shape=1),
@@ -51,30 +53,48 @@ class FeatureProto(object):
         proto(name='Cover_Type', dtype=tf.float32, shape=1),
     ]
 
+    @property
+    def size(self):
+        size = 0
+        for prototype in self.features:
+            size += prototype.shape
+        return size
+
     def dataset_creation(self, data):
         idx = 0
         collection = {}
         for prototype in self.features:
+            datum = [data[idx]] if prototype.shape == 1 else data[idx:idx + prototype.shape]
             encoded_feature = self._generate_feature(
-                prototype.dtype, prototype.shape, data, idx
+                prototype.dtype, datum, idx
             )
             collection[prototype.name] = encoded_feature
             idx += prototype.shape
         return collection
 
-    def _generate_feature(self, dtype, shape, data, idx):
-        datum = [data[idx]] if shape == 1 else data[idx:idx + shape]
-
+    def _generate_feature(self, dtype, data, idx):
         if dtype == tf.float16 or dtype == tf.float32 or dtype == tf.float64:
-            encoded_feature = _float_feature(datum)
+            encoded_feature = _float_feature(data)
         elif dtype == tf.int16 or dtype == tf.int32 or dtype == tf.int64:
-            encoded_feature = _int64_feature(datum)
+            encoded_feature = _int64_feature(data)
         elif dtype == tf.string:
-            encoded_feature = _bytes_feature(datum)
+            encoded_feature = _bytes_feature(data)
         else:
             raise NotImplementedError('Unmated type while generating feature in FeatureProto')
         return encoded_feature
-    
+
+    def unpack(self, example_proto):
+        features = self._dataset_parsing()
+        parsed_features = tf.parse_single_example(example_proto, features)
+        labels = parsed_features['Cover_Type']
+        parsed_features.pop('Cover_Type')
+        # Then, convert the dataset into tensors which tensorflow expects?
+        parsed_features['Soil_Type'] = tf.convert_to_tensor(parsed_features['Soil_Type'])
+        parsed_features['Wilderness_Area'] = tf.cast(tf.argmax(parsed_features['Wilderness_Area'], axis=0),
+                                                     dtype=tf.float32)
+        labels = tf.cast(labels, dtype=tf.int32)
+        return parsed_features, labels
+
     def _dataset_parsing(self):
         if hasattr(self, 'parser_proto'):
             return self.parser_proto
@@ -87,19 +107,6 @@ class FeatureProto(object):
                 parser_proto[feat_name] = tf.FixedLenFeature(() if shape == 1 else (shape), dtype)
             self.parser_proto = parser_proto
             return self.parser_proto
-        
-    def unpack(self, example_proto):
-        features = self._dataset_parsing()
-        parsed_features = tf.parse_single_example(example_proto, features)
-        labels = parsed_features['Cover_Type']
-        parsed_features.pop('Cover_Type')
-        # Then, convert the dataset into tensors which tensorflow expects?
-        parsed_features['Soil_Type'] = tf.convert_to_tensor(parsed_features['Soil_Type'])
-        parsed_features['Wilderness_Area'] = tf.cast(tf.argmax(parsed_features['Wilderness_Area'], axis=0), dtype=tf.float32)
-        labels = tf.cast(labels, dtype=tf.int32)
-        # labels = tf.one_hot(tf.cast(labels, dtype=tf.uint8), 8, on_value=1, off_value=0, axis=-1)
-
-        return parsed_features, labels
     
     def get_feature_columns(self):
         """
