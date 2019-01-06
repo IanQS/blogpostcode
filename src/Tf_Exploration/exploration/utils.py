@@ -36,6 +36,8 @@ class FeatureProto(object):
 
     proto = namedtuple('prototype', ['name', 'dtype', 'shape'])
 
+
+
     # Reading the data
     features = [
         proto(name='Elevation', dtype=tf.float32, shape=1),
@@ -52,6 +54,9 @@ class FeatureProto(object):
         proto(name='Soil_Type', dtype=tf.float32, shape=40),
         proto(name='Cover_Type', dtype=tf.float32, shape=1),
     ]
+
+    def __init__(self, one_hot=False):
+        self.one_hot = one_hot
 
     @property
     def size(self):
@@ -93,6 +98,8 @@ class FeatureProto(object):
         parsed_features['Wilderness_Area'] = tf.cast(tf.argmax(parsed_features['Wilderness_Area'], axis=0),
                                                      dtype=tf.float32)
         labels = tf.cast(labels, dtype=tf.int32)
+        if self.one_hot:
+            labels = tf.one_hot(tf.cast(labels, dtype=tf.uint8), 8, on_value=1, off_value=0, axis=-1)
         return parsed_features, labels
 
     def _dataset_parsing(self):
@@ -158,6 +165,8 @@ def dataset_config(repeat=False, batch_size=32, num_cpus=None,
 
     if repeat:
         dataset = dataset.repeat()
+
+    dataset = dataset.shuffle(buffer_size=batch_size * 10)
 
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=batch_size)
