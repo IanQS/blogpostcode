@@ -1,10 +1,8 @@
 .idea
-<<<<<<< HEAD
 *.npy
 *.data
 src/Tf_Exploration/exploration/processed_data/*
-=======
->>>>>>> bd5e643f1ae7c4daa545ef5534eba9c32620a578
+src/Tf_Exploration/exploration/unprocessed_data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

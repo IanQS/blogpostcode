@@ -11,6 +11,20 @@ utils.py
 
 import tensorflow as tf
 
+# Parse records
+
+def _bytes_feature(value, shape):
+    """Returns a bytes_list from a string / byte."""
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=value))
+
+def _float_feature(value, shape):
+    """Returns a float_list from a float / double."""
+    return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+
+def _int64_feature(value, shape):
+    """Returns an int64_list from a bool / enum / int / uint."""
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+
 class FeatureProto(object):
     from collections import namedtuple
     
@@ -37,23 +51,25 @@ class FeatureProto(object):
         idx = 0
         collection = {}
         for prototype in self.features:
-            feat_name = prototype.name
-            dtype = prototype.dtype
-            shape = prototype.shape
-            
-            if dtype == tf.float32:
-                if shape == 1:
-                    datum = data[idx]
-                    encoded_feature = _float_feature(datum)
-                else:
-                    datum = data[idx: idx+shape]
-                    encoded_feature = _tensor_feature(datum, 'float_list', tf.train.FloatList)
-            else:
-                raise NotImplementedError('dataset creation for non-float32 not supported')
-            
-            collection[feat_name] = encoded_feature
-            idx += shape
+            encoded_feature = self._generate_feature(
+                prototype.dtype, prototype.shape, data, idx
+            )
+            collection[prototype.name] = encoded_feature
+            idx += prototype.shape
         return collection
+
+    def _generate_feature(self, dtype, shape, data, idx):
+        datum = [data[idx]] if shape == 1 else data[idx:idx + shape]
+
+        if dtype == tf.float16 or dtype == tf.float32 or dtype == tf.float64:
+            encoded_feature = _float_feature(datum, shape)
+        elif dtype == tf.int16 or dtype == tf.int32 or dtype == tf.int64:
+            encoded_feature = _int64_feature(datum, shape)
+        elif dtype == tf.string:
+            encoded_feature = _bytes_feature(datum, shape)
+        else:
+            raise NotImplementedError('Unmated type while generating feature in FeatureProto')
+        return encoded_feature
     
     def _dataset_parsing(self):
         if hasattr(self, 'parser_proto'):
@@ -121,23 +137,8 @@ def dataset_config(filenames: list, mapper=None, repeat=False, batch_size=32,
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=batch_size)
     
-    if initializable:
-        """
-        An initializable iterator requires you to run an explicit iterator.initializer operation before using it. 
-        In exchange for this inconvenience, it enables you to parameterize the definition of the dataset, 
-        using one or more tf.placeholder() tensors that can be fed when you initialize the iterator
-        """
-        # Creates an Iterator for enumerating the elements of this dataset
-        if sess is None:
-            raise Exception('Initializable dataset configuration specified but session not supplied')
-        iterator = dataset.make_initializable_iterator()
-    else:
-        """
-        A one-shot iterator is the simplest form of iterator, which only supports iterating once through a dataset, 
-        with no need for explicit initialization. One-shot iterators handle almost all of the cases that the existing 
-        queue-based input pipelines support, but they do not support parameterization
-        """
-        iterator = dataset.make_one_shot_iterator()
+
+    iterator = dataset.make_one_shot_iterator()
         
     if initializable:
         assert feed_dict is not None, 'Supply feed dict to initializable iterator'
