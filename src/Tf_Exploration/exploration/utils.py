@@ -55,6 +55,13 @@ class FeatureProto(object):
         proto(name='Cover_Type', dtype=tf.float32, shape=1),
     ]
 
+    parser_proto = {}
+    for prototype in features:
+        feat_name = prototype.name
+        dtype = prototype.dtype
+        shape = prototype.shape
+        parser_proto[feat_name] = tf.FixedLenFeature(() if shape == 1 else (shape), dtype)
+
     def __init__(self, one_hot=False):
         self.one_hot = one_hot
 
@@ -89,7 +96,7 @@ class FeatureProto(object):
         return encoded_feature
 
     def unpack(self, example_proto):
-        features = self._dataset_parsing()
+        features = self.parser_proto
         parsed_features = tf.parse_single_example(example_proto, features)
         labels = parsed_features['Cover_Type']
         parsed_features.pop('Cover_Type')
@@ -102,18 +109,7 @@ class FeatureProto(object):
             labels = tf.one_hot(tf.cast(labels, dtype=tf.uint8), 8, on_value=1, off_value=0, axis=-1)
         return parsed_features, labels
 
-    def _dataset_parsing(self):
-        if hasattr(self, 'parser_proto'):
-            return self.parser_proto
-        else:
-            parser_proto = {}
-            for prototype in self.features:
-                feat_name = prototype.name
-                dtype = prototype.dtype
-                shape = prototype.shape
-                parser_proto[feat_name] = tf.FixedLenFeature(() if shape == 1 else (shape), dtype)
-            self.parser_proto = parser_proto
-            return self.parser_proto
+
     
     def get_feature_columns(self):
         """
@@ -142,7 +138,7 @@ class FeatureProto(object):
 
 
 
-def dataset_config(repeat=False, batch_size=32, num_cpus=None,
+def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=False,
                    # Used in tfRecordDatasets
                    filenames: list = None, mapper=None,
                    # Used in from_tensor_slices
@@ -163,19 +159,18 @@ def dataset_config(repeat=False, batch_size=32, num_cpus=None,
         raise ValueError('If loading from tfRecordDatasets fill in filenames and mapper. '
                          'If using from_tensor_slices feed in a initializable(placeholder iterable), session, and feed_dict')
 
-    if repeat:
-        dataset = dataset.repeat()
+    if repeat:  # For epochs
+        dataset = dataset.repeat(repeat)
 
     dataset = dataset.shuffle(buffer_size=batch_size * 10)
 
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=batch_size)
 
-    if tensor_slices:
-        iterator = dataset.make_initializable_iterator()
-        sess.run(iterator.initializer, feed_dict=feed_dict)
-    else:
-        iterator = dataset.make_one_shot_iterator()
+    if return_dataset:  # Useful in canned estimators which can work directly
+        return dataset
 
-    next_element = iterator.get_next()
-    return next_element
+    iterator = dataset.make_one_shot_iterator()
+    batch_features, batch_labels = iterator.get_next()
+
+    return batch_features, batch_labels
