@@ -5,7 +5,6 @@ the main loader file which can be configured via yaml
 Author: Ian Q.
 
 Notes:
-    Implemented for interview with AssemblyAI
 """
 
 
