@@ -172,5 +172,7 @@ def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=Fa
 
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
+    print(batch_features)
+    print(batch_labels)
 
     return batch_features, batch_labels
