@@ -46,6 +46,4 @@ features = [
               dimension=10
           )
     ),
-    # proto(name='Cover_Type', dtype=tf.float32, shape=1,
-    #       feature_column=tf.feature_column.categorical_column_with_identity('Cover_Type', num_buckets=8))
 ]
