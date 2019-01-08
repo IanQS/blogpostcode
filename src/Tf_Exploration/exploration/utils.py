@@ -114,7 +114,7 @@ class FeatureProto(object):
         return [v.feature_column for v in self.features if v.feature_column is not None]
 
 
-def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=False,
+def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=False, shuffle=True,
                    # Used in tfRecordDatasets
                    filenames: list = None, mapper=None,
                    # Used in from_tensor_slices
@@ -138,7 +138,8 @@ def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=Fa
     if repeat:  # For epochs
         dataset = dataset.repeat(repeat)
 
-    dataset = dataset.shuffle(buffer_size=batch_size * 10)
+    if shuffle:
+        dataset = dataset.shuffle(buffer_size=batch_size * 10)
 
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=batch_size)
