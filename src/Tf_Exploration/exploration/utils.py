@@ -11,6 +11,7 @@ utils.py
 
 import tensorflow as tf
 from typing import Tuple
+from .proto_definitions import features as PROTO_FEATURES
 
 # Parse records
 
@@ -31,29 +32,11 @@ def _int64_feature(value):
 
 
 class FeatureProto(object):
-    from collections import namedtuple
-    import numpy as np
-
-    proto = namedtuple('prototype', ['name', 'dtype', 'shape'])
-
-
 
     # Reading the data
-    features = [
-        proto(name='Elevation', dtype=tf.float32, shape=1),
-        proto(name='Aspect', dtype=tf.float32, shape=1),
-        proto(name='Slope', dtype=tf.float32, shape=1),
-        proto(name='Horizontal_Distance_To_Hydrology', dtype=tf.float32, shape=1),
-        proto(name='Vertical_Distance_To_Hydrology', dtype=tf.float32, shape=1),
-        proto(name='Horizontal_Distance_To_Roadways', dtype=tf.float32, shape=1),
-        proto(name='Hillshade_9am', dtype=tf.float32, shape=1),
-        proto(name='Hillshade_Noon', dtype=tf.float32, shape=1),
-        proto(name='Hillshade_3pm', dtype=tf.float32, shape=1),
-        proto(name='Horizontal_Distance_To_Fire_Points', dtype=tf.float32, shape=1),
-        proto(name='Wilderness_Area', dtype=tf.float32, shape=4),
-        proto(name='Soil_Type', dtype=tf.float32, shape=40),
-        proto(name='Cover_Type', dtype=tf.float32, shape=1),
-    ]
+    features = PROTO_FEATURES
+
+
 
     parser_proto = {}
     for prototype in features:
@@ -98,13 +81,17 @@ class FeatureProto(object):
     def unpack(self, example_proto):
         features = self.parser_proto
         parsed_features = tf.parse_single_example(example_proto, features)
-        labels = parsed_features['Cover_Type']
-        parsed_features.pop('Cover_Type')
+        for k, v in parsed_features.items():
+            parsed_features[k] = tf.cast(v, dtype=tf.int32)
+        labels = parsed_features['Wilderness_Area']
+        parsed_features.pop('Wilderness_Area')
+
         # Then, convert the dataset into tensors which tensorflow expects?
         parsed_features['Soil_Type'] = tf.convert_to_tensor(parsed_features['Soil_Type'])
-        parsed_features['Wilderness_Area'] = tf.cast(tf.argmax(parsed_features['Wilderness_Area'], axis=0),
-                                                     dtype=tf.float32)
-        labels = tf.cast(labels, dtype=tf.int32)
+
+        # Label managing
+        labels = tf.cast(tf.argmax(labels, axis=0), dtype=tf.int32)
+
         if self.one_hot:
             labels = tf.one_hot(tf.cast(labels, dtype=tf.uint8), 8, on_value=1, off_value=0, axis=-1)
         return parsed_features, labels
@@ -124,18 +111,7 @@ class FeatureProto(object):
                 categorical_column_with_hash_bucket("keywords", 10K), dimensions=16)
             columns = [price, keywords_embedded, ...]
         """
-        label_less = self.features
-        held = []
-        for v in label_less:
-            if v.name == 'Cover_Type':
-                continue
-            else:
-                if v.name != 'Soil_Type':
-                    held.append(tf.feature_column.numeric_column(v.name))
-                else:
-                    held.append(tf.feature_column.numeric_column(v.name, shape=(40)))
-        return held
-
+        return [v.feature_column for v in self.features if v.feature_column is not None]
 
 
 def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=False,
@@ -174,3 +150,21 @@ def dataset_config(repeat=False, batch_size=32, num_cpus=None, return_dataset=Fa
     batch_features, batch_labels = iterator.get_next()
 
     return batch_features, batch_labels
+
+
+def split_into_linear_numeric(features):
+    if isinstance(features, list):  # Used when
+        linear = features[-2:]
+        numeric = features[:-2]
+        return linear, numeric
+    assert isinstance(features, dict), 'Unsupported type in split_into_linear_numeric: {}'.format(type(features))
+
+    # Hard-coded to be fast
+
+    linear = {'Soil_Type': features['Soil_Type'],
+              'Cover_Type': features['Cover_Type']}
+
+    features.pop('Soil_Type')
+    features.pop('Cover_Type')
+
+    return linear, features
