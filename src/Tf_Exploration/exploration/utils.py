@@ -1,5 +1,5 @@
 """
-utils.py
+model_utils.py
     - for use with tf_exploration. Contains classes from Notebook1-data_exploration (for use in Notebook2)
     
     - lets us focus on notebook 2. Will serve as jumping point for the production series
