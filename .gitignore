@@ -5,6 +5,7 @@ src/Tf_Exploration/exploration/processed_data/*
 src/Tf_Exploration/exploration/unprocessed_data/*
 **/datasets
 **/bq
+**/tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
