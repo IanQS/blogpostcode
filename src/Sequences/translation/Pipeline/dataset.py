@@ -20,7 +20,21 @@ import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
 
+from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC, pattern
+
 class Dataset(object):
-    def __init__(self):
-        self.producer = _Producer()
+    def __init__(self, load_loc, save_loc, pattern):
+        self.producer = _Producer(save_loc)
         self.provider = _Provider()
+
+        self.load_loc = load_loc
+        self.glob_pattern = pattern
+
+    def generate_records(self, load_loc=None, glob_pattern=None, overwrite=False):
+        glob_pattern = self.glob_pattern if glob_pattern is None else glob_pattern
+        load_loc = self.load_loc if load_loc is None else load_loc
+        self.producer.generate_records(load_loc, glob_pattern, overwrite)
+
+if __name__ == '__main__':
+    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern)
+    ds.generate_records(overwrite=True)
