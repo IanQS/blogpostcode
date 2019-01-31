@@ -54,15 +54,15 @@ class _Producer(object):
     # Public Interace
     ################################################
 
-    def generate_records(self, src: str = None, pattern=None, overwrite=True) -> None:
+    def generate_records(self, load_from: str = None, pattern=None, overwrite=True) -> None:
         # Is serving and we want to hook into saving
-        if src is None:
+        if load_from is None:
             if self.write_condition(self):
                 self.__write_txt(self.storage)
             return
 
         # Else, continue as normal
-        filenames = self.__glob_records(src, pattern)
+        filenames = self.__glob_records(load_from, pattern)
         self.__generate_records(filenames=filenames, overwrite=overwrite)
 
     ################################################

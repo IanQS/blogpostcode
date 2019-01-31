@@ -14,8 +14,6 @@ Author: Ian Q.
 Notes:
 
 """
-
-
 import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
@@ -25,7 +23,7 @@ from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC, pattern
 class Dataset(object):
     def __init__(self, load_loc, save_loc, pattern):
         self.producer = _Producer(save_loc)
-        self.provider = _Provider()
+        self.provider = _Provider(load_location=save_loc)
 
         self.load_loc = load_loc
         self.glob_pattern = pattern
