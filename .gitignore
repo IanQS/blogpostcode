@@ -3,6 +3,7 @@
 *.data
 src/Tf_Exploration/exploration/processed_data/*
 src/Tf_Exploration/exploration/unprocessed_data/*
+**/datasets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

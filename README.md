@@ -4,6 +4,4 @@ Used with musings from [my blog](https://ianqs.github.io/blog/)
 
 # Breakdown
 
-- I keep an eye on production, so we're going to try and write some production-focused code.
-
-- Models: All models will try to inherit from `base_model` so that we have a constant, sane, interface 
+Contains all the various sub-fields of ML that I find interesting and want to explore
