@@ -33,6 +33,9 @@ class Dataset(object):
         load_loc = self.load_loc if load_loc is None else load_loc
         self.producer.generate_records(load_loc, glob_pattern, overwrite)
 
+
+    def get_datasets
+
 if __name__ == '__main__':
     ds = Dataset(LOAD_LOC, SAVE_LOC, pattern)
-    ds.generate_records(overwrite=True)
+    #ds.generate_records(overwrite=True)

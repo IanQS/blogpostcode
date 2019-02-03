@@ -13,17 +13,34 @@ Notes:
 """
 
 import tensorflow as tf
+import os
 
 class _Provider(object):
     def __init__(self, load_location, eval_proportion=0.2):
         self.load_location = load_location
+        self.eval_proportion = eval_proportion
 
-        training_data, evaluation_data =
+
+    def construct_datasets(self, config):
+        training_data_files, evaluation_data_files = self._get_split()
+
+        train_dataset = self._read_dataset(training_data_files, tf.estimator.ModeKeys.TRAIN, config)
+
+        eval_dataset = self._read_dataset(evaluation_data_files, tf.estimator.ModeKeys.EVAL, config)
 
 
-    def read_dataset(self, filenames, mode, config):
+        return {'train_files': training_data_files, 'train_dataset': train_dataset,
+                'eval_files': evaluation_data_files, 'eval_dataset': eval_dataset
+                }
+
+
+    def _get_split(self):
+        training_data, evaluation_data = self.__split_dataset(self.eval_proportion)
+        return training_data, evaluation_data
+
+    def _read_dataset(self, filenames, mode, config):
         dataset = tf.data.TFRecordDataset(filenames)
-        dataset = dataset.map(self._parse_example, num_parallel_calls=config['num_cpus'])
+        dataset = dataset.map(self.__parse_example, num_parallel_calls=config['num_cpus'])
 
         if mode == tf.estimator.ModeKeys.TRAIN:
             num_epochs = None  # Train indefinitely
@@ -34,11 +51,23 @@ class _Provider(object):
         return dataset.make_one_shot_iterator().get_next()
 
 
-    def _parse_example(self, example_proto):
+    def __parse_example(self, example_proto):
         pass
 
     ################################################
     # Split dataset
     ################################################
 
-    
+    def __split_dataset(self, proportion):
+        test_files = []
+        train_files = []
+        for f_name in os.listdir(self.load_location):
+            hashed_name = (hash(f_name) % 10) / 10
+
+            fixed_path = os.path.join(self.load_location, f_name)
+            if hashed_name < proportion:
+                test_files.append(fixed_path)
+            else:
+                train_files.append(fixed_path)
+
+        return train_files, test_files

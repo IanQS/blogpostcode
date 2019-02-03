@@ -128,8 +128,6 @@ class _Producer(object):
             src_file = os.path.join(location, pattern['src'].format(formatted_string))
             targ_file = os.path.join(location, pattern['target'].format(formatted_string))
 
-            print(src_file, targ_file)
-
             if not os.path.exists(src_file) or not os.path.exists(targ_file):
                 break
 
@@ -149,6 +147,6 @@ class _Producer(object):
         try:
             max_name = natsorted(os.listdir(path), reverse=True)[0]  # 1.txt
         except Exception as e:
-            print(e)
+            print('Failed to get max index within Producer')
             max_name = 0
         return max_name
