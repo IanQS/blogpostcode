@@ -14,11 +14,13 @@ Notes:
 
 import tensorflow as tf
 import os
+import logging
 
 class _Provider(object):
     def __init__(self, load_location, eval_proportion=0.2):
         self.load_location = load_location
         self.eval_proportion = eval_proportion
+        self.logger = logging.getLogger('tensorflow')
 
 
     def construct_datasets(self, config):
@@ -28,14 +30,14 @@ class _Provider(object):
 
         eval_dataset = self._read_dataset(evaluation_data_files, tf.estimator.ModeKeys.EVAL, config)
 
-
+        self.logger.info('Done reading!')
         return {'train_files': training_data_files, 'train_dataset': train_dataset,
                 'eval_files': evaluation_data_files, 'eval_dataset': eval_dataset
                 }
 
 
     def _get_split(self):
-        training_data, evaluation_data = self.__split_dataset(self.eval_proportion)
+        training_data, evaluation_data = self.__split_train_eval(self.eval_proportion)
         return training_data, evaluation_data
 
     def _read_dataset(self, filenames, mode, config):
@@ -52,13 +54,24 @@ class _Provider(object):
 
 
     def __parse_example(self, example_proto):
-        pass
+        features = {
+            'source': tf.VarLenFeature(dtype=tf.string),
+            'target': tf.VarLenFeature(dtype=tf.string)
+        }
+        parsed_features = tf.parse_single_example(example_proto, feature)
+        
+#         sentences = tf.regex_replace(parsed_features['source'], '[[:punct:]]', ' ')
+#         words = tf.string_split(sentences)
+#         words = tf.sparse_tensor_to_dense(words, default_value=)
+        
+        
+        return parsed_features['source'], parsed_features['target']
 
     ################################################
     # Split dataset
     ################################################
 
-    def __split_dataset(self, proportion):
+    def __split_train_eval(self, proportion):
         test_files = []
         train_files = []
         for f_name in os.listdir(self.load_location):

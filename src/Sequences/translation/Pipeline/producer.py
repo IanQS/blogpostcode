@@ -21,6 +21,7 @@ import os
 import errno
 from typing import Callable
 from natsort import natsorted
+import logging
 
 
 def bytes_feature(value: list):
@@ -47,7 +48,7 @@ class _Producer(object):
             err_m = 'Write condition was specified, but location to save to: "to_process_location" was not specified'
             assert self.to_process_location is not None, err_m
             self.to_process_location = to_process_location
-
+        self.logger = logging.getLogger('tensorflow')
         self.__create_save_location()
 
     ################################################
@@ -147,6 +148,6 @@ class _Producer(object):
         try:
             max_name = natsorted(os.listdir(path), reverse=True)[0]  # 1.txt
         except Exception as e:
-            print('Failed to get max index within Producer')
+            self.logger.critical('Failed to get max index within Producer')
             max_name = 0
         return max_name

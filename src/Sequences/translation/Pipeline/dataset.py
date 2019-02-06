@@ -18,15 +18,19 @@ import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
 
-from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC, pattern
+from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC, pattern, DATASET_DEFAULTS, logging_setup
+import pprint
+import logging
 
 class Dataset(object):
-    def __init__(self, load_loc, save_loc, pattern):
+    def __init__(self, load_loc, save_loc, pattern, sess):
         self.producer = _Producer(save_loc)
         self.provider = _Provider(load_location=save_loc)
 
         self.load_loc = load_loc
         self.glob_pattern = pattern
+        self.logger = logging.getLogger('tensorflow')
+        self.sess = sess
 
     def generate_records(self, load_loc=None, glob_pattern=None, overwrite=False):
         glob_pattern = self.glob_pattern if glob_pattern is None else glob_pattern
@@ -34,8 +38,33 @@ class Dataset(object):
         self.producer.generate_records(load_loc, glob_pattern, overwrite)
 
 
-    def get_datasets
+    def get_datasets(self, **kwargs):
+        dataset_constructor_defaults = DATASET_DEFAULTS
+        for k,v in kwargs.items():
+            dataset_constructor_defaults[k] = v
+        
+        return_dict = self.provider.construct_datasets(dataset_constructor_defaults)
+        
+        self.logger.info('Train Files: {}'.format(return_dict['train_files']))
+        self.logger.info('Eval Files: {}'.format(return_dict['eval_files']))
+        
+        return return_dict['train_dataset'], return_dict['eval_dataset']
+    
+    
+    def example(self, to_eval):
+        self.logger.debug(self.sess.run(to_eval))
+        
 
 if __name__ == '__main__':
-    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern)
+    logging_setup()
+    sess = tf.InteractiveSession()
+    init = tf.global_variables_initializer()
+    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern, sess)
+    sess.run(init)
+    
+    
+    
     #ds.generate_records(overwrite=True)
+    _, to_eval = ds.get_datasets()
+    ds.example(to_eval)
+    
