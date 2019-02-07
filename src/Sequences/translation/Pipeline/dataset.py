@@ -68,6 +68,11 @@ if __name__ == '__main__':
 
 
     ds = Dataset(LOAD_LOC, SAVE_LOC, pattern, sess, use_raw)
-    _, to_eval = ds.get_datasets()
-    ds.example(to_eval)
+
+    # Producing
+    ds.generate_records()
+
+    # Reading
+    # _, to_eval = ds.get_datasets()
+    # ds.example(to_eval)
     

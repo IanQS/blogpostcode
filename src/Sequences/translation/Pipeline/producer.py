@@ -85,6 +85,8 @@ class _Producer(object):
             else:
                 curr_index = 0
             filenames = filenames[curr_index:]  # -1 because the datasets are stored 1 index
+
+        self.logger.info('Generating raw' if self._raw else 'Generating tfRecord')
         for src_target in tqdm.tqdm(filenames):
             self.__read_and_write(src_target, curr_index)
             curr_index += 1
@@ -101,10 +103,8 @@ class _Producer(object):
 
         # Pass list over to __write
         if self._raw:
-            self.logger.info('Generating raw')
             self.__write_raw(accum_source, accum_target, curr_index)
         else:
-            self.logger.info('Generating tfRecord')
             self.__write_record(accum_source, accum_target, curr_index)
 
 
