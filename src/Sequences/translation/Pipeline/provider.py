@@ -17,18 +17,64 @@ import os
 import logging
 
 class _Provider(object):
-    def __init__(self, load_location, eval_proportion=0.2, use_raw=False):
+    def __init__(self, load_location, eval_proportion=0.2, use_raw=False, padword=None, vocab_file_path=None, max_seq_len=None):
+        self.logger = logging.getLogger(__name__)
+        if padword is None or vocab_file_path is None or max_seq_len is None:
+            self.logger.critical('padword or vocab_file_path or max_seq_len was none. All should be filled')
+            raise Exception('Provider Crash')
         self.load_location = load_location
         self.eval_proportion = eval_proportion
         self.use_raw = use_raw
-        self.logger = logging.getLogger(__name__)
-        self.use_raw = use_raw
+        self.padword = padword
+        self.vocab_file_path = vocab_file_path
+        self.max_seq_len = max_seq_len
 
-    def get_input_handlers(self):
+
+
+    def generate_specs(self, hparams: dict):
+        """Generate the eval and train estimator.Specs
+        :return:
+        """
+        input_fn, serving_input_fn = self._get_input_handlers()
+        train_source, train_target, test_source, test_target = self._get_data()
+
+        train_steps = hparams['num_epochs'] * len(train_source) / hparams['batch_size']
+        train_spec = tf.estimator.TrainSpec(
+            input_fn=lambda:input_fn(
+                train_source,
+                train_target,
+                hparams['batch_size'],
+                mode=tf.estimator.ModeKeys.TRAIN),
+            max_steps=train_steps
+        )
+
+        # Create EvalSpec
+        exporter = tf.estimator.LatestExporter('exporter', serving_input_fn)
+        eval_spec = tf.estimator.EvalSpec(
+            input_fn=lambda:input_fn(
+                test_source,
+                test_target,
+                hparams['batch_size'],
+                mode=tf.estimator.ModeKeys.EVAL),
+            steps=None,
+            exporters=exporter,
+            start_delay_secs=10,
+            throttle_secs=10
+        )
+
+        return train_spec, eval_spec
+
+
+    def _get_input_handlers(self):
+
         training_input_handlers = self._get_training_handlers()
         serving_input_handlers = self._get_serving_handlers()
         return training_input_handlers, serving_input_handlers
 
+    #############################################
+    # Data handlers
+    #############################################
+    
 
     def _get_training_handlers(self, source, target, batch_size, mode):
         x = tf.constant(source)
@@ -43,8 +89,8 @@ class _Provider(object):
         dataset = dataset.map(self._pad)
 
         if mode == tf.estimator.ModeKeys.TRAIN:
-            num_epochs = None  # loop indefinitley
-            dataset = dataset.shuffle(buffer_size=50000)  # our input is already shuffled so this is redundant
+            num_epochs = None
+            dataset = dataset.shuffle(buffer_size=batch_size * 100)
         else:
             num_epochs = 1
 
@@ -56,17 +102,22 @@ class _Provider(object):
         features = self._vectorize_sentences(feature_placeholder)
         return tf.estimator.export.TensorServingInputReceiver(features, feature_placeholder)
 
+
+    #############################################
+    # Pre-processing utilities
+    #############################################
+
     def _vectorize_sentences(self, sentences):
         # 1. Remove punctuation
         sentences = tf.regex_replace(sentences, '[[:punct:]]', ' ')
 
         # 2. Split string tensor into component words
         words = tf.string_split(sentences)
-        words = tf.sparse_tensor_to_dense(words, default_value=PADWORD)
+        words = tf.sparse_tensor_to_dense(words, default_value=self.padword)
 
         # 3. Map each word to respective integer
         table = tf.contrib.lookup.index_table_from_file(
-            vocabulary_file=VOCAB_FILE_PATH,
+            vocabulary_file=self.vocab_file_path,
             num_oov_buckets=0,
             vocab_size=None,
             default_value=0,  # for words not in vocabulary (OOV)
@@ -84,8 +135,8 @@ class _Provider(object):
         without_zeros = tf.squeeze(without_zeros, axis=1)
 
         # 2. Prepend 0s till MAX_SEQUENCE_LENGTH
-        padded = tf.pad(without_zeros, [[MAX_SEQUENCE_LENGTH, 0]])  # pad out with zeros
-        padded = padded[-MAX_SEQUENCE_LENGTH:]  # slice to constant length
+        padded = tf.pad(without_zeros, [[self.max_seq_len, 0]])  # pad out with zeros
+        padded = padded[-self.max_seq_len:]  # slice to constant length
         return (padded, label)
 
     ################################################

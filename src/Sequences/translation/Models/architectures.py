@@ -8,6 +8,6 @@ _models_ = {
 def model_builder(config: dict):
     model_name = config['name']
     config.pop('name')
-    architecture = _models_.get(name)
+    architecture = _models_.get(model_name)
     model = architecture(**config)
     return model

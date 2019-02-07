@@ -14,6 +14,7 @@ Author: Ian Q.
 Notes:
 
 """
+
 import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
@@ -21,46 +22,31 @@ import pprint
 import logging
 
 class Dataset(object):
-    def __init__(self, load_loc, save_loc, pattern, sess, use_raw=True):
-        self.producer =  _Producer(save_loc, generate_raw=use_raw)
-        self.provider = _Provider(load_location=save_loc, use_raw=use_raw)
-
-        self.load_loc = load_loc
-        self.glob_pattern = pattern
+    def __init__(self, sess, producer_config:dict, provider_config:dict):
         self.logger = logging.getLogger(__name__)
+        self.logger.info('Producer: {}'.format(producer_config))
+        self.logger.info('Provider: {}'.format(provider_config))
+
+        self.glob_pattern = producer_config.pop('glob_pattern')
+
         self.sess = sess
 
-    def generate_records(self, load_loc=None, glob_pattern=None, overwrite=False):
-        glob_pattern = self.glob_pattern if glob_pattern is None else glob_pattern
-        load_loc = self.load_loc if load_loc is None else load_loc
-        if self.producer is None:
-            self.logger.error('use_raw was True, so Producer was not instantiated')
-            raise Exception
-        else:
-            self.producer.generate_records(load_loc, glob_pattern, overwrite)
+        self.producer =  _Producer(**producer_config)
+        self.provider = _Provider(**provider_config)
 
-    def get_input_handlers(self):
-        return self.provider.get_input_handlers()
-    
-    def example(self, to_eval):
-        self.logger.debug(self.sess.run(to_eval))
-        
+    #############################################
+    # Producer
+    #   - generates the datasets
+    #############################################
 
-if __name__ == '__main__':
-    from Sequences.translation.Logger.logger import logging_setup
-    from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC_RECORDS, pattern, DATASET_DEFAULTS, SAVE_LOC_NPY
-    logging_setup()
+    def generate_records(self, raw_data_location, glob_pattern=None, overwrite=False):
+        glob_pattern = glob_pattern if glob_pattern is not None else self.glob_pattern
+        self.producer.generate_records(raw_data_location, pattern=glob_pattern, overwrite=overwrite)
 
-    use_raw = True
-    sess = tf.InteractiveSession()
-    init = tf.global_variables_initializer()
+    #############################################
+    # Provider
+    #   - loads in the data and feeds it
+    #############################################
 
-    ds = Dataset(LOAD_LOC, SAVE_LOC_NPY if use_raw else SAVE_LOC_RECORDS , pattern, sess, use_raw)
-
-    # Producing
-    ds.generate_records(overwrite=False)
-
-    # Reading
-    # _, to_eval = ds.get_datasets()
-    # ds.example(to_eval)
-    
+    def generate_specs(self, hparams):
+        return self.provider.generate_specs(hparams)

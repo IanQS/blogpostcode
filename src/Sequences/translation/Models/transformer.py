@@ -1,3 +1,4 @@
 class Transformer(object):
-    def __init__(self):
+    def __init__(self, sess):
+        self.sess = sess
         pass

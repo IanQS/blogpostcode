@@ -64,6 +64,7 @@ class _Producer(object):
     def generate_records(self, load_from: str = None, pattern=None, overwrite=True) -> None:
         # Is serving and we want to hook into saving
         if load_from is None:
+            self.logger.info('Data Source is None. Writing data received from serving')
             if self.write_condition(self):
                 self.__write_txt(self.storage)
             return
@@ -78,10 +79,13 @@ class _Producer(object):
 
     def __generate_records(self, filenames: list, overwrite: bool) -> None:
         curr_index = 0  # we split the dataset and started from 1
-        if overwrite:
+        if not overwrite:
             _ = self.__get_max_index(self.save_loc)
             if _ != 0:
-                curr_index = int(_.split('.tfrecord')[0])
+                if self._raw:
+                    curr_index = int(_.split('.npy')[0])
+                else:
+                    curr_index = int(_.split('.tfrecord')[0])
             else:
                 curr_index = 0
             filenames = filenames[curr_index:]  # -1 because the datasets are stored 1 index
@@ -165,9 +169,10 @@ class _Producer(object):
                 raise
 
     def __get_max_index(self, path):
+        contents = natsorted(os.listdir(path), reverse=True)
         try:
-            max_name = natsorted(os.listdir(path), reverse=True)[0]  # 1.txt
+            max_name = contents[0]  # 1.npy/1.tensorflow
         except Exception as e:
-            self.logger.critical('Failed to get max index within Producer')
+            self.logger.info('Failed to get max index. Contents: {}'.format(contents))
             max_name = 0
         return max_name

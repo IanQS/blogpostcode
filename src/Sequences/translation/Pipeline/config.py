@@ -2,7 +2,7 @@ LOAD_LOC = '../../datasets/translation/split/'
 SAVE_LOC_RECORDS = '../../datasets/translation/records/'
 SAVE_LOC_NPY ='../../datasets/translation/npy/'
 
-pattern = {
+PRODUCER_CONSTRUCT_PATTERN = {
     'src': 'europarl-v7.sv-en.en{}',
     'target': 'europarl-v7.sv-en.sv{}'
 }
