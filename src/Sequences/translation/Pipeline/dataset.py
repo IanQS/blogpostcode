@@ -42,19 +42,8 @@ class Dataset(object):
         else:
             self.producer.generate_records(load_loc, glob_pattern, overwrite)
 
-
-    def get_datasets(self, **kwargs):
-        dataset_constructor_defaults = DATASET_DEFAULTS
-        for k,v in kwargs.items():
-            dataset_constructor_defaults[k] = v
-        
-        return_dict = self.provider.construct_datasets(dataset_constructor_defaults, )
-        
-        self.logger.info('Train Files: {}'.format(return_dict['train_files']))
-        self.logger.info('Eval Files: {}'.format(return_dict['eval_files']))
-        
-        return return_dict['train_dataset'], return_dict['eval_dataset']
-    
+    def get_input_handlers(self):
+        return self.provider.get_input_handlers()
     
     def example(self, to_eval):
         self.logger.debug(self.sess.run(to_eval))
