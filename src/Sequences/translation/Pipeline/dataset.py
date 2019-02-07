@@ -18,7 +18,8 @@ import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
 
-from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC, pattern, DATASET_DEFAULTS, logging_setup
+from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC_RECORDS, \
+    pattern, DATASET_DEFAULTS, logging_setup, SAVE_LOC_NPY
 import pprint
 import logging
 
@@ -66,11 +67,10 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession()
     init = tf.global_variables_initializer()
 
-
-    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern, sess, use_raw)
+    ds = Dataset(LOAD_LOC, SAVE_LOC_NPY if use_raw else SAVE_LOC_RECORDS , pattern, sess, use_raw)
 
     # Producing
-    ds.generate_records()
+    ds.generate_records(overwrite=False)
 
     # Reading
     # _, to_eval = ds.get_datasets()

@@ -22,6 +22,7 @@ class _Provider(object):
         self.eval_proportion = eval_proportion
         self.use_raw = use_raw
         self.logger = logging.getLogger(__name__)
+        self.use_raw = use_raw
 
 
     def construct_datasets(self, config):

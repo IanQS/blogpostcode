@@ -7,7 +7,8 @@ import logging.config
 import yaml
 
 LOAD_LOC = '../../datasets/translation/split/'
-SAVE_LOC = '../../datasets/translation/records/'
+SAVE_LOC_RECORDS = '../../datasets/translation/records/'
+SAVE_LOC_NPY ='../../datasets/translation/npy/'
 
 pattern = {
     'src': 'europarl-v7.sv-en.en{}',
