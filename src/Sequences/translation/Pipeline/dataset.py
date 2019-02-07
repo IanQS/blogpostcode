@@ -17,9 +17,6 @@ Notes:
 import tensorflow as tf
 from Sequences.translation.Pipeline.producer import _Producer
 from Sequences.translation.Pipeline.provider import _Provider
-
-from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC_RECORDS, \
-    pattern, DATASET_DEFAULTS, logging_setup, SAVE_LOC_NPY
 import pprint
 import logging
 
@@ -50,6 +47,8 @@ class Dataset(object):
         
 
 if __name__ == '__main__':
+    from Sequences.translation.Logger.logger import logging_setup
+    from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC_RECORDS, pattern, DATASET_DEFAULTS, SAVE_LOC_NPY
     logging_setup()
 
     use_raw = True
