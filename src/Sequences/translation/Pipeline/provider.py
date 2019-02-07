@@ -17,10 +17,11 @@ import os
 import logging
 
 class _Provider(object):
-    def __init__(self, load_location, eval_proportion=0.2):
+    def __init__(self, load_location, eval_proportion=0.2, use_raw=False):
         self.load_location = load_location
         self.eval_proportion = eval_proportion
-        self.logger = logging.getLogger('tensorflow')
+        self.use_raw = use_raw
+        self.logger = logging.getLogger(__name__)
 
 
     def construct_datasets(self, config):

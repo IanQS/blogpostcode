@@ -13,7 +13,12 @@ Notes:
         or some location
 
         - reads in data as a list, and writes them based on the size
+
+    Generic:
+        - if use_raw in dataset is True, this object is not instantiated. Instead, we
+        read directly from
 """
+import numpy as np
 
 import tensorflow as tf
 import tqdm
@@ -31,7 +36,7 @@ def bytes_feature(value: list):
 
 class _Producer(object):
     def __init__(self, save_location: str, write_condition: Callable = None,
-                 to_process_location: str=None):
+                 to_process_location: str=None, generate_raw=False):
         """
         Create the Provider object
 
@@ -39,16 +44,17 @@ class _Producer(object):
             condition for when to generate records.
             only triggered when we don't explicitly receive data
         """
-
+        self.logger = logging.getLogger(__name__)
         self.save_loc = save_location
 
         self.write_condition = write_condition
         self.storage = None if self.write_condition is None else []
         if write_condition is not None:
             err_m = 'Write condition was specified, but location to save to: "to_process_location" was not specified'
-            assert self.to_process_location is not None, err_m
+            self.logger.critical(err_m)
             self.to_process_location = to_process_location
-        self.logger = logging.getLogger('tensorflow')
+
+        self._raw = generate_raw
         self.__create_save_location()
 
     ################################################
@@ -94,7 +100,21 @@ class _Producer(object):
                     storage.append(line.strip())
 
         # Pass list over to __write
-        self.__write_record(accum_source, accum_target, curr_index)
+        if self._raw:
+            self.logger.info('Generating raw')
+            self.__write_raw(accum_source, accum_target, curr_index)
+        else:
+            self.logger.info('Generating tfRecord')
+            self.__write_record(accum_source, accum_target, curr_index)
+
+
+    def __write_raw(self, source:list, target: list, index):
+        filename = '{}/{}.npy'.format(self.save_loc, index)
+        dict_accum = {
+            'source': source,
+            'target': target
+        }
+        np.save(filename, dict_accum)
 
     def __write_record(self, source: list, target: list, index):
         filename = '{}/{}.tfrecord'.format(self.save_loc, index)

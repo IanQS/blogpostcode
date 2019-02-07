@@ -23,19 +23,23 @@ import pprint
 import logging
 
 class Dataset(object):
-    def __init__(self, load_loc, save_loc, pattern, sess):
-        self.producer = _Producer(save_loc)
-        self.provider = _Provider(load_location=save_loc)
+    def __init__(self, load_loc, save_loc, pattern, sess, use_raw=True):
+        self.producer =  _Producer(save_loc, generate_raw=use_raw)
+        self.provider = _Provider(load_location=save_loc, use_raw=use_raw)
 
         self.load_loc = load_loc
         self.glob_pattern = pattern
-        self.logger = logging.getLogger('tensorflow')
+        self.logger = logging.getLogger(__name__)
         self.sess = sess
 
     def generate_records(self, load_loc=None, glob_pattern=None, overwrite=False):
         glob_pattern = self.glob_pattern if glob_pattern is None else glob_pattern
         load_loc = self.load_loc if load_loc is None else load_loc
-        self.producer.generate_records(load_loc, glob_pattern, overwrite)
+        if self.producer is None:
+            self.logger.error('use_raw was True, so Producer was not instantiated')
+            raise Exception
+        else:
+            self.producer.generate_records(load_loc, glob_pattern, overwrite)
 
 
     def get_datasets(self, **kwargs):
@@ -43,7 +47,7 @@ class Dataset(object):
         for k,v in kwargs.items():
             dataset_constructor_defaults[k] = v
         
-        return_dict = self.provider.construct_datasets(dataset_constructor_defaults)
+        return_dict = self.provider.construct_datasets(dataset_constructor_defaults, )
         
         self.logger.info('Train Files: {}'.format(return_dict['train_files']))
         self.logger.info('Eval Files: {}'.format(return_dict['eval_files']))
@@ -57,14 +61,13 @@ class Dataset(object):
 
 if __name__ == '__main__':
     logging_setup()
+
+    use_raw = True
     sess = tf.InteractiveSession()
     init = tf.global_variables_initializer()
-    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern, sess)
-    sess.run(init)
-    
-    
-    
-    #ds.generate_records(overwrite=True)
+
+
+    ds = Dataset(LOAD_LOC, SAVE_LOC, pattern, sess, use_raw)
     _, to_eval = ds.get_datasets()
     ds.example(to_eval)
     
