@@ -11,10 +11,12 @@ Notes:
 
         - provide whatever is required for inference time and serving
 """
+import time
 
 import tensorflow as tf
 import os
 import logging
+import numpy as np
 
 class _Provider(object):
     def __init__(self, load_location, eval_proportion=0.2, use_raw=False, padword=None, vocab_file_path=None, max_seq_len=None):
@@ -28,19 +30,17 @@ class _Provider(object):
         self.padword = padword
         self.vocab_file_path = vocab_file_path
         self.max_seq_len = max_seq_len
-
-
-
+/
     def generate_specs(self, hparams: dict):
         """Generate the eval and train estimator.Specs
         :return:
         """
-        input_fn, serving_input_fn = self._get_input_handlers()
-        train_source, train_target, test_source, test_target = self._get_data()
+        proportion = hparams.get('eval_proportion', self.eval_proportion)
+        train_source, train_target, test_source, test_target = self._get_data(proportion)
 
         train_steps = hparams['num_epochs'] * len(train_source) / hparams['batch_size']
         train_spec = tf.estimator.TrainSpec(
-            input_fn=lambda:input_fn(
+            input_fn=lambda:self._get_handlers(
                 train_source,
                 train_target,
                 hparams['batch_size'],
@@ -49,9 +49,9 @@ class _Provider(object):
         )
 
         # Create EvalSpec
-        exporter = tf.estimator.LatestExporter('exporter', serving_input_fn)
+        exporter = tf.estimator.LatestExporter('exporter', self._get_serving_handlers)
         eval_spec = tf.estimator.EvalSpec(
-            input_fn=lambda:input_fn(
+            input_fn=lambda:self._get_handlers(
                 test_source,
                 test_target,
                 hparams['batch_size'],
@@ -64,19 +64,11 @@ class _Provider(object):
 
         return train_spec, eval_spec
 
-
-    def _get_input_handlers(self):
-
-        training_input_handlers = self._get_training_handlers()
-        serving_input_handlers = self._get_serving_handlers()
-        return training_input_handlers, serving_input_handlers
-
     #############################################
-    # Data handlers
+    # tf Data Handlers
     #############################################
     
-
-    def _get_training_handlers(self, source, target, batch_size, mode):
+    def _get_handlers(self, source, target, batch_size, mode):
         x = tf.constant(source)
 
         # Map text to sequence of word-integers and pad
@@ -104,7 +96,7 @@ class _Provider(object):
 
 
     #############################################
-    # Pre-processing utilities
+    # tf Pre-processing utilities
     #############################################
 
     def _vectorize_sentences(self, sentences):
@@ -138,6 +130,35 @@ class _Provider(object):
         padded = tf.pad(without_zeros, [[self.max_seq_len, 0]])  # pad out with zeros
         padded = padded[-self.max_seq_len:]  # slice to constant length
         return (padded, label)
+
+    #############################################
+    # non-tf Data Handlers
+    #############################################
+
+    def _get_data(self, eval_proportion):
+        train_source = []
+        train_target = []
+
+        test_source = []
+        test_target = []
+
+        train_files, test_files = self.__split_train_eval(eval_proportion)
+        self.logger.debug('Train files: {}'.format(train_files))
+        self.logger.debug('Test files: {}'.format(test_files))
+
+        for f_name in train_files:
+            data = np.load(f_name)
+            train_source.extend(data['source'])
+            train_target.extend(data['target'])
+            data.close()
+
+        for f_name in test_files:
+            data = np.load(f_name)
+            test_source.extend(data['source'])
+            test_target.extend(data['target'])
+            data.close()
+
+        return train_source, train_target, test_source, test_target
 
     ################################################
     # Split dataset

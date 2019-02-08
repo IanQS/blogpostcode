@@ -7,8 +7,8 @@ from Sequences.translation.Pipeline.dataset import Dataset
 
 
 class Orchestrator(object):
-    def __init__(self, sess, model_config:dict, dataset_config:dict):
-        logging_setup()
+    def __init__(self, sess, model_config:dict, dataset_config:dict, logger_mode=logging.INFO):
+        logging_setup(logger_mode)
         self.logger = logging.getLogger(__name__)
         self.sess = sess
         self.ds = Dataset(**dataset_config)
@@ -29,8 +29,21 @@ class Orchestrator(object):
 
 
 if __name__ == '__main__':
-    from Sequences.translation.Pipeline.config import LOAD_LOC, SAVE_LOC_RECORDS, \
-        PRODUCER_CONSTRUCT_PATTERN, SAVE_LOC_NPY
+
+    # DEFAULTS
+    LOAD_LOC = '../../datasets/translation/split/'
+    SAVE_LOC_RECORDS = '../../datasets/translation/records/'
+    SAVE_LOC_NPY = '../../datasets/translation/npz/'
+
+    PRODUCER_CONSTRUCT_PATTERN = {
+        'src': 'europarl-v7.sv-en.en{}',
+        'target': 'europarl-v7.sv-en.sv{}'
+    }
+
+    DATASET_DEFAULTS = {
+        'num_cpus': 8,
+        'batch_size': 32
+    }
     
     use_raw = True
     sess = tf.InteractiveSession()
@@ -46,14 +59,17 @@ if __name__ == '__main__':
         'name' :'Transformer',
         'sess' :sess,
 
+        # hparams specific to this model
 
-        'model_hparams' :{
-
+        'embedding': {
+            'top_k': 1000,
+            'word_index': None,
+            'embedding_path': None,
+            'embedding_dim': None
         },
 
-        'hparams':{
-            'batch_size': 64,
-            'num_epochs': 100
+        'model_hparams':{
+            'thing': 100
         }
     }
 
@@ -73,14 +89,23 @@ if __name__ == '__main__':
             'load_location': processed_data_location,
             'eval_proportion': 0.2,
             'padword': '<<<',
-            'vocab_file_path': None,
+            'vocab_file_path': '.',
             'max_seq_len': 40
         }
+    }
+
+    # Hparams not specific to a model
+    H_PARAMS = {
+        'batch_size': 64,
+        'num_epochs': 100,
+        'eval_proportion': 0.2,
     }
     
     orchestrator = Orchestrator(sess, MODEL_CONFIG, DATASET_CONFIG)
 
-    # orchestrator.build_dataset(raw_data_location, overwrite=False)
+
+    print(orchestrator.ds.generate_specs(H_PARAMS))
+    #orchestrator.build_dataset(raw_data_location, overwrite=False)
 
     # Finally, train, evaluate, and deploy
     # orchestrator.train_and_evaluate()

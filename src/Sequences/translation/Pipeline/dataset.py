@@ -24,8 +24,8 @@ import logging
 class Dataset(object):
     def __init__(self, sess, producer_config:dict, provider_config:dict):
         self.logger = logging.getLogger(__name__)
-        self.logger.info('Producer: {}'.format(producer_config))
-        self.logger.info('Provider: {}'.format(provider_config))
+        self.logger.debug('Producer config: {}'.format(producer_config))
+        self.logger.debug('Provider config: {}'.format(provider_config))
 
         self.glob_pattern = producer_config.pop('glob_pattern')
 

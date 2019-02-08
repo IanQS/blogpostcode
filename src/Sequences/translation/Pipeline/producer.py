@@ -113,12 +113,12 @@ class _Producer(object):
 
 
     def __write_raw(self, source:list, target: list, index):
-        filename = '{}/{}.npy'.format(self.save_loc, index)
+        filename = '{}/{}.npz'.format(self.save_loc, index)
         dict_accum = {
             'source': source,
             'target': target
         }
-        np.save(filename, dict_accum)
+        np.savez(filename, **dict_accum)
 
     def __write_record(self, source: list, target: list, index):
         filename = '{}/{}.tfrecord'.format(self.save_loc, index)

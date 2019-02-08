@@ -6,7 +6,7 @@ import os
 import logging.config
 import yaml
 
-def logging_setup(default_path='logging.yaml', default_level=logging.INFO,
+def logging_setup(default_path='logging.yaml', default_level=logging.DEBUG,
                   env_key='LOG_CFG'):
     # Setup logging
     Path('logs').mkdir(exist_ok=True)
