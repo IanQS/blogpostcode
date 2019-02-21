@@ -4,6 +4,7 @@
 src/Tf_Exploration/exploration/processed_data/*
 src/Tf_Exploration/exploration/unprocessed_data/*
 **/datasets
+**/node_modules
 **/bq
 **/tmp
 
