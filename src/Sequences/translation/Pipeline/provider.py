@@ -30,7 +30,7 @@ class _Provider(object):
         self.padword = padword
         self.vocab_file_path = vocab_file_path
         self.max_seq_len = max_seq_len
-/
+
     def generate_specs(self, hparams: dict):
         """Generate the eval and train estimator.Specs
         :return:
