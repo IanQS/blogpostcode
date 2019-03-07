@@ -6,6 +6,7 @@ src/Tf_Exploration/exploration/unprocessed_data/*
 **/datasets
 **/node_modules
 **/bq
+**/esl
 **/tmp
 
 # Byte-compiled / optimized / DLL files
